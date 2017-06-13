@@ -30,15 +30,19 @@ void TTMHelper::Load_QCDMistag (TString datafile,TString histoname)
 }
 
  
-void TTMHelper::Load_DisSDM (TString datafile,TString histoname)
+TH1F* TTMHelper::Load_DisSDM (TString datafile,TString histoname)
 {
 	TFile *file = new TFile(datafile,"READ");
+        TH1F *fSDM = new TH1F();
 	if (file->IsZombie()){
 	std::cout << "Error opening file " << datafile << std::endl;
+        return fSDM;
 	}
 	else{
-	fSDM = dynamic_cast<TH1F*> (file->Get(histoname));	
+	fSDM = (TH1F*)file->Get(histoname);
 	}
+        return fSDM;
+
 }
 
 
@@ -50,11 +54,14 @@ float TTMHelper::GetMistagrate (float pt, float eta)
 }
 
 //get random number according to SDM distribution
-float TTMHelper::GetRndmSDM (void)
-{
-	return fSDM->GetRandom();
-}
+// float TTMHelper::GetRndmSDM (void)
+// {
+// 	return fSDM->GetRandom();
+// }
 	
-
+float TTMHelper::GetRndmSDM (TH1F* histo)
+{
+	return histo->GetRandom();
+}
 
 
