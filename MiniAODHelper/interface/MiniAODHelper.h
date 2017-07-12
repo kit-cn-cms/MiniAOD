@@ -5,7 +5,7 @@
 #include <vector>
 #include <map>
 #include <exception>
-#include <cmath> 
+#include <cmath>
 #include <iomanip>
 #include <algorithm>
 #include "TVector.h"
@@ -21,8 +21,10 @@
 #include "TMVA/Reader.h"
 #include "TMVA/MethodCuts.h"
 
+#include <TRandom3.h>
+
 #ifdef __MAKECINT__
-#pragma link C++ class std::vector< TLorentzVector >+; 
+#pragma link C++ class std::vector< TLorentzVector >+;
 #endif
 
 #if !defined(__CINT__) && !defined(__MAKECINT__)
@@ -30,7 +32,7 @@
 #include "DataFormats/FWLite/interface/Handle.h"
 #include "DataFormats/FWLite/interface/Event.h"
 #include "DataFormats/FWLite/interface/ChainEvent.h"
-#include "CommonTools/Utils/interface/normalizedPhi.h"
+#include "DataFormats/Math/interface/normalizedPhi.h"
 #include "DataFormats/Math/interface/deltaR.h"
 
 #include "DataFormats/BeamSpot/interface/BeamSpot.h"
@@ -47,6 +49,8 @@
 #include "DataFormats/PatCandidates/interface/Isolation.h"
 #include "DataFormats/PatCandidates/interface/Tau.h"
 #include "DataFormats/PatCandidates/interface/Particle.h"
+#include "DataFormats/JetReco/interface/GenJetCollection.h"
+#include "DataFormats/JetReco/interface/GenJet.h"
 #include "MiniAOD/BoostedObjects/interface/BoostedJet.h"
 
 #include "PhysicsTools/SelectorUtils/interface/JetIDSelectionFunctor.h"
@@ -56,15 +60,22 @@
 #include "DataFormats/Math/interface/LorentzVector.h"
 
 #include "JetMETCorrections/Objects/interface/JetCorrector.h"
+#include "JetMETCorrections/Objects/interface/JetCorrectionsRecord.h"
 #include "CondFormats/JetMETObjects/interface/JetCorrectorParameters.h"
 #include "CondFormats/JetMETObjects/interface/FactorizedJetCorrector.h"
 #include "CondFormats/JetMETObjects/interface/JetCorrectionUncertainty.h"
 
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/EventSetup.h"
+#include "FWCore/Framework/interface/ESHandle.h"
 
 #include "MiniAOD/MiniAODHelper/interface/PUWeightProducer.h"
 
+#include "DataFormats/MuonReco/interface/MuonSelectors.h"
+
+#include "MiniAOD/MiniAODHelper/interface/Systematics.h"
+
+#include "JetMETCorrections/Modules/interface/JetResolution.h"
 
 #endif
 
@@ -78,7 +89,6 @@ typedef std::vector<double> vdouble;
 typedef std::vector<int> vint;
 
 namespace analysisType{ enum analysisType{ LJ, DIL, TauLJ, TauDIL }; }
-namespace sysType{enum sysType{NA, JERup, JERdown, JESup, JESdown, hfSFup, hfSFdown, lfSFdown, lfSFup, TESup, TESdown, CSVLFup, CSVLFdown, CSVHFup, CSVHFdown, CSVHFStats1up, CSVHFStats1down, CSVLFStats1up, CSVLFStats1down, CSVHFStats2up, CSVHFStats2down, CSVLFStats2up, CSVLFStats2down, CSVCErr1up, CSVCErr1down, CSVCErr2up, CSVCErr2down }; }
 namespace jetID{		enum jetID{			none, jetPU, jetMinimal, jetLooseAOD, jetLoose, jetTight, jetMETcorrection }; }
 namespace tauID { enum tauID{ tauNonIso, tauLoose, tauMedium, tauTight }; }
 namespace tau { enum ID { nonIso, loose, medium, tight }; }
@@ -94,7 +104,8 @@ namespace muonID{
       muonPtOnly, muonPtEtaOnly, muonPtEtaIsoOnly, muonPtEtaIsoTrackerOnly,
       muonRaw,
       muonLooseCutBased, muonTightCutBased, muonCutBased, muonLooseMvaBased, muonTightMvaBased,
-      muon2lss
+      muon2lss,
+      muonMediumICHEP
    };
 }
 namespace electronID{
@@ -110,13 +121,15 @@ namespace electronID{
       electronLooseMvaBased, electronTightMvaBased,
       electron2lss,
       electronSpring15Veto, electronSpring15L, electronSpring15M, electronSpring15T,
-      electronEndOf15MVA80, electronEndOf15MVA90, electronEndOf15MVA80iso0p1, electronEndOf15MVA80iso0p15, electronEndOf15MVA90iso0p1, electronEndOf15MVA90iso0p15
+      electronEndOf15MVA80, electronEndOf15MVA90, electronEndOf15MVA80iso0p1, electronEndOf15MVA80iso0p15, electronEndOf15MVA90iso0p1, electronEndOf15MVA90iso0p15,
+      electron80XCutBasedL,electron80XCutBasedM,electron80XCutBasedT,electronNonTrigMVAid90,electronNonTrigMVAid80,
+      electronGeneralPurposeMVA2016WP80,electronGeneralPurposeMVA2016WP90 // MVA IDs for 80X with 80 and 90 percent eff.
    };
 }
 namespace hdecayType{	enum hdecayType{ hbb, hcc, hww, hzz, htt, hgg, hjj, hzg }; }
 namespace coneSize{ enum coneSize{miniIso,R03,R04};}
 namespace corrType{ enum corrType{deltaBeta,rhoEA};}
-namespace effAreaType{ enum effAreaType{spring15,phys14};}
+namespace effAreaType{ enum effAreaType{spring16,spring15,phys14};}
 
 using namespace std;
 
@@ -129,7 +142,7 @@ T * ptr(T * obj) { return obj; } //obj is already pointer, return it!
 class MiniAODHelper{
 
   // === Functions === //
- public: 
+ public:
   // Constructor(s) and destructor
   MiniAODHelper();
   virtual ~MiniAODHelper();
@@ -142,28 +155,35 @@ class MiniAODHelper{
   void UseCorrectedJets() { use_corrected_jets = true; };
   void SetJetCorrector(const JetCorrector*);
   void SetBoostedJetCorrector(const JetCorrector*);
-  void SetJetCorrectorUncertainty();
-  void SetJetCorrectorUncertainty(const JetCorrectorParameters&);
-  void SetBoostedJetCorrectorUncertainty();
-  void SetFactorizedJetCorrector();
+
+  void UpdateJetCorrectorUncertainties(const edm::EventSetup& iSetup);
+
+  void SetJER_SF_Tool(const edm::EventSetup& iSetup );
+
+  // temporary construction...
+  void SetAK8JetCorrectorUncertainty(const edm::EventSetup& iSetup, 
+				     const std::string& uncertaintyLabel = "Uncertainty");
+
   void SetPackedCandidates(const std::vector<pat::PackedCandidate> & all, int fromPV_thresh=1, float dz_thresh=9999., bool also_leptons=false);
-  
+
   virtual std::vector<pat::Muon> GetSelectedMuons(const std::vector<pat::Muon>&, const float, const muonID::muonID, const coneSize::coneSize = coneSize::R04, const corrType::corrType = corrType::deltaBeta, const float = 2.4);
   virtual std::vector<pat::Electron> GetSelectedElectrons(const std::vector<pat::Electron>&, const float, const electronID::electronID, const float = 2.4);
   std::vector<pat::Tau> GetSelectedTaus(const std::vector<pat::Tau>&, const float, const tau::ID);
   std::vector<pat::Jet> GetSelectedJets(const std::vector<pat::Jet>&, const float, const float, const jetID::jetID, const char);
   std::vector<pat::Jet> GetUncorrectedJets(const std::vector<pat::Jet>&);
   std::vector<pat::Jet> GetUncorrectedJets(edm::Handle<pat::JetCollection>);
-  pat::Jet GetCorrectedJet(const pat::Jet&, const edm::Event&, const edm::EventSetup&, const sysType::sysType iSysType=sysType::NA, const bool& doJES=true, const bool& doJER=true, const float& corrFactor = 1, const float& uncFactor = 1);
-  float GetJetCorrectionFactor(const pat::Jet&, const edm::Event&, const edm::EventSetup&, const sysType::sysType iSysType=sysType::NA, const bool& doJES=true, const bool& doJER=true, const float& corrFactor = 1, const float& uncFactor = 1);
-  pat::Jet GetCorrectedAK8Jet(const pat::Jet&, const edm::Event&, const edm::EventSetup&, const sysType::sysType iSysType=sysType::NA, const bool& doJES=true, const bool& doJER=true, const float& corrFactor = 1, const float& uncFactor = 1);
-  float GetAK8JetCorrectionFactor(const pat::Jet&, const edm::Event&, const edm::EventSetup&, const sysType::sysType iSysType=sysType::NA, const bool& doJES=true, const bool& doJER=true, const float& corrFactor = 1, const float& uncFactor = 1);
-  std::vector<pat::Jet> GetCorrectedJets(const std::vector<pat::Jet>&, const edm::Event&, const edm::EventSetup&, const sysType::sysType iSysType=sysType::NA, const bool& doJES=true, const bool& doJER=true, const float& corrFactor = 1, const float& uncFactor = 1);
-  std::vector<pat::Jet> GetCorrectedJets(const std::vector<pat::Jet>&, const sysType::sysType iSysType=sysType::NA);
-  std::vector<boosted::BoostedJet> GetCorrectedBoostedJets(const std::vector<boosted::BoostedJet>& inputBoostedJets, const edm::Event&, const edm::EventSetup&, const sysType::sysType iSysType=sysType::NA, const bool& doJES=true, const bool& doJER=true, const float& corrFactor = 1, const float& uncFactor = 1);
-  std::vector<boosted::BoostedJet> GetSelectedBoostedJets(const std::vector<boosted::BoostedJet>&, const float, const float, const float, const float, const jetID::jetID);
+  pat::Jet GetCorrectedJet(const pat::Jet&, const edm::Event&, const edm::EventSetup&, const edm::Handle<reco::GenJetCollection>&, const Systematics::Type iSysType=Systematics::NA, const bool doJES=true, const bool doJER=true, const float corrFactor = 1, const float uncFactor = 1);
+  float GetJetCorrectionFactor(const pat::Jet&, const edm::Event&, const edm::EventSetup&, const edm::Handle<reco::GenJetCollection>&, const Systematics::Type iSysType=Systematics::NA, const bool doJES=true, const bool doJER=true, const float corrFactor = 1, const float uncFactor = 1);
+  pat::Jet GetCorrectedAK8Jet(const pat::Jet&, const edm::Event&, const edm::EventSetup&, const edm::Handle<reco::GenJetCollection>&, const Systematics::Type iSysType=Systematics::NA, const bool& doJES=true, const bool& doJER=true, const float& corrFactor = 1, const float& uncFactor = 1);
+  float GetAK8JetCorrectionFactor(const pat::Jet&, const edm::Event&, const edm::EventSetup&, const edm::Handle<reco::GenJetCollection>&, const Systematics::Type iSysType=Systematics::NA, const bool& doJES=true, const bool& doJER=true, const float& corrFactor = 1, const float& uncFactor = 1);
+  std::vector<pat::Jet> GetCorrectedJets(const std::vector<pat::Jet>&, const edm::Event&, const edm::EventSetup&, const edm::Handle<reco::GenJetCollection>&, const Systematics::Type iSysType=Systematics::NA, const bool& doJES=true, const bool& doJER=true, const float& corrFactor = 1, const float& uncFactor = 1);
+  //  std::vector<pat::Jet> GetCorrectedJets(const std::vector<pat::Jet>&, const Systematics::Type iSysType=Systematics::NA);
+  std::vector<boosted::BoostedJet> GetCorrectedBoostedJets(const std::vector<boosted::BoostedJet>& inputBoostedJets, const edm::Event&, const edm::EventSetup&, const edm::Handle<reco::GenJetCollection>&, const Systematics::Type iSysType=Systematics::NA, const bool& doJES=true, const bool& doJER=true, const float& corrFactor = 1, const float& uncFactor = 1);
+  std::vector<boosted::BoostedJet> GetSelectedBoostedJets(const std::vector<boosted::BoostedJet>&, const float, const float, const float, const float, const jetID::jetID, const string);
   std::vector<pat::PackedCandidate> GetPackedCandidates(void);
   bool passesMuonPOGIdTight(const pat::Muon&);
+  bool passesMuonPOGIdICHEPMedium(const pat::Muon&);
+
   bool isGoodMuon(const pat::Muon&, const float, const float, const muonID::muonID, const coneSize::coneSize, const corrType::corrType);
   bool isGoodElectron(const pat::Electron& iElectron, const float iMinPt, const float iMaxEta,const electronID::electronID iElectronID);
   bool isGoodTau(const pat::Tau&, const float, const tau::ID);
@@ -177,17 +197,24 @@ class MiniAODHelper{
   float GetElectronRelIso(const pat::Electron&, const coneSize::coneSize, const corrType::corrType, const effAreaType::effAreaType=effAreaType::phys14, std::map<std::string,double>* miniIso_calculation_params = 0) const;
   void AddElectronRelIso(pat::Electron&,const coneSize::coneSize, const corrType::corrType,const effAreaType::effAreaType=effAreaType::phys14,std::string userFloatName="relIso") const;
   void AddElectronRelIso(std::vector<pat::Electron>&,const coneSize::coneSize, const corrType::corrType,const effAreaType::effAreaType=effAreaType::phys14,std::string userFloatName="relIso") const;
-  static float GetJetCSV(const pat::Jet&, const std::string = "pfCombinedInclusiveSecondaryVertexV2BJetTags"); 
+  static float GetJetCSV(const pat::Jet&, const std::string = "pfCombinedInclusiveSecondaryVertexV2BJetTags");
   bool PassesCSV(const pat::Jet&, const char);
   bool PassElectronPhys14Id(const pat::Electron&, const electronID::electronID) const;
   bool PassElectronSpring15Id(const pat::Electron&, const electronID::electronID) const;
   vector<pat::Electron> GetElectronsWithMVAid(edm::Handle<edm::View<pat::Electron> > electrons, edm::Handle<edm::ValueMap<float> > mvaValues, edm::Handle<edm::ValueMap<int> > mvaCategories) const;
+  bool PassElectron80XId(const pat::Electron&, const electronID::electronID) const;
+
   bool InECALbarrel(const pat::Electron&) const;
   bool InECALendcap(const pat::Electron&) const;
   bool PassesMVAidPreselection(const pat::Electron&) const;
-  bool PassesMVAidCuts(const pat::Electron& el, float cut0, float cut1, float cut2) const;
+  bool PassesMVAidCuts(const pat::Electron& el, float cut0, float cut1, float cut2, bool b_requirePreselection = true ) const;
   bool PassesMVAid80(const pat::Electron&) const;
   bool PassesMVAid90(const pat::Electron&) const;
+  bool PassesNonTrigMVAid80(const pat::Electron& el) const;
+  bool PassesNonTrigMVAid90(const pat::Electron& el) const;
+  bool PassesGeneralPurposeMVA2016WP80(const pat::Electron& el) const;
+  bool PassesGeneralPurposeMVA2016WP90(const pat::Electron& el) const;
+
   void addVetos(const reco::Candidate &cand);
   void clearVetos();
   float isoSumRaw(const std::vector<const pat::PackedCandidate *> & cands, const reco::Candidate &cand, float dR, float innerR, float threshold, SelfVetoPolicy::SelfVetoPolicy selfVeto, int pdgId=-1) const;
@@ -196,14 +223,18 @@ class MiniAODHelper{
   std::vector<pat::Jet> GetDeltaRCleanedJets(const std::vector<pat::Jet>&, const std::vector<pat::Muon>&, const std::vector<pat::Electron>&, const double);
 
   enum TTbarDecayMode{
-    ChNotDefined = 0 , 
-    SingleLepCh = 1, 
+    ChNotDefined = 0 ,
+    SingleLepCh = 1,
     DiLepCh = 2 ,
     FullHadCh = 3
   };
   // Top quarks "top->W->tau" are regarded as "leptonically decaying top quark" regardless of tau decay (tau->e/mu/had).
-  TTbarDecayMode GetTTbarDecay(edm::Handle<std::vector<reco::GenParticle> >& mcparticles);
+  TTbarDecayMode GetTTbarDecay(edm::Handle<std::vector<reco::GenParticle> >& mcparticles ,
+			       TLorentzVector * top =0 ,
+			       TLorentzVector * antitop =0 );
 
+  bool GenJet_Match( const pat::Jet&, const edm::Handle<reco::GenJetCollection>&, reco::GenJet&, const double& );
+  bool jetdPtMatched(const pat::Jet& inputJet, const reco::GenJet& genjet);
   double getJERfactor( const int, const double, const double, const double );
   std::vector<pat::MET> CorrectMET(const std::vector<pat::Jet>& oldJetsForMET, const std::vector<pat::Jet>& newJetsForMET, const std::vector<pat::MET>& pfMETs);
   // Return weight factor dependent on number of true PU interactions
@@ -221,13 +252,13 @@ class MiniAODHelper{
   template <typename T, typename S> std::vector<T> GetUnion( const std::vector<S>&, const std::vector<T>& );
 
  protected:
-  
+
   bool isSetUp;
   bool vertexIsSet;
   bool rhoIsSet;
   bool factorizedjetcorrectorIsSet;
   bool use_corrected_jets = false;
-  
+
   string era;
   int sampleNumber;
   bool isData;
@@ -246,8 +277,9 @@ class MiniAODHelper{
   const JetCorrector* corrector = 0;
   const JetCorrector* ak8corrector = 0;
   FactorizedJetCorrector* useJetCorrector;
-  JetCorrectionUncertainty *jecUnc_ = 0;
-  JetCorrectionUncertainty *ak8jecUnc_;
+  //  std::unique_ptr<JetCorrectionUncertainty> jecUnc_;
+  std::map< std::string, std::unique_ptr<JetCorrectionUncertainty> > jecUncertainties_;
+  std::unique_ptr<JetCorrectionUncertainty> ak8jecUnc_;
   PUWeightProducer puWeightProducer_;
 
   inline void ThrowFatalError(const std::string& m) const { cerr << "[ERROR]\t" << m << " Cannot continue. Terminating..." << endl; exit(1); };
@@ -259,12 +291,12 @@ class MiniAODHelper{
  private :
 
   struct _topquarkdecayobjects {
-    const reco::Candidate * top ; 
-    const reco::Candidate * bottom ; 
+    const reco::Candidate * top ;
+    const reco::Candidate * bottom ;
     const reco::Candidate * W ;
     const reco::Candidate * WChild_up;
     const reco::Candidate * WChild_down;
-    bool isWChild_tau ; 
+    bool isWChild_tau ;
     const reco::Candidate * Tau_Neu ;
     std::vector< const reco::Candidate *> TauChildren ;
 
@@ -279,7 +311,28 @@ class MiniAODHelper{
 
   }; // end structure .
 
+  void ApplyJetEnergyCorrection(pat::Jet& jet,
+				double& totalCorrFactor,
+				const edm::Event& event,
+				const edm::EventSetup& setup,
+				const edm::Handle<reco::GenJetCollection>& genjets,
+				const Systematics::Type iSysType,
+				const bool doJES,
+				const bool doJER,
+				const bool addUserFloats,
+				const float corrFactor,
+				const float uncFactor);
   
+  std::string jetTypeLabelForJECUncertainty_;
+  std::string jecUncertaintyTxtFileName_;
+  JetCorrectionUncertainty* CreateJetCorrectorUncertainty(const edm::EventSetup& iSetup, 
+							  const std::string& jetTypeLabel,
+							  const std::string& uncertaintyLabel) const;
+  void AddJetCorrectorUncertainty(const edm::EventSetup& iSetup, const std::string& uncertaintyLabel);
+  double GetJECUncertainty(const pat::Jet& jet, const edm::EventSetup& iSetup, const Systematics::Type iSysType);
+
+
+
   void FillTopQuarkDecayInfomration ( const reco::Candidate * c ,
 				      struct _topquarkdecayobjects * topdecayobjects) ;
 
@@ -287,6 +340,20 @@ class MiniAODHelper{
 
   const reco::Candidate * GetObjectJustBeforeDecay( const reco::Candidate * particle );
 
+  std::vector<double>    JER_etaMin;
+  std::vector<double>    JER_etaMax;
+  std::vector<double>    JER_rhoMin;
+  std::vector<double>    JER_rhoMax;
+  std::vector<double>    JER_PtMin;
+  std::vector<double>    JER_PtMax;
+  std::vector<double>    JER_Par0;
+  std::vector<double>    JER_Par1;
+  std::vector<double>    JER_Par2;
+  std::vector<double>    JER_Par3;
+
+  JME::JetResolution            JER_ak4_resolution ;
+  JME::JetResolutionScaleFactor JER_ak4_resolutionSF ;
+  TRandom3 JERRandumGenerator ;
 
 }; // End of class prototype
 
@@ -362,7 +429,7 @@ std::vector<PATObj1> MiniAODHelper::GetUnion(const std::vector<PATObj2>& col2,co
 }
 
 
-template <typename PATObj1, typename PATObj2> 
+template <typename PATObj1, typename PATObj2>
 PATObj1 MiniAODHelper::RemoveOverlap( const std::vector<PATObj2>& other, const PATObj1& unclean ){
 
   unsigned int nSources1 = unclean.numberOfSourceCandidatePtrs();
@@ -413,11 +480,11 @@ PATObj1 MiniAODHelper::RemoveOverlap( const std::vector<PATObj2>& other, const P
 }
 
 
-template <typename PATObj1, typename PATObj2> 
+template <typename PATObj1, typename PATObj2>
 std::vector<PATObj1> MiniAODHelper::RemoveOverlaps( const std::vector<PATObj2>& other, const std::vector<PATObj1>& unclean ){
 
   std::vector<PATObj1> cleaned;
-  
+
   for( typename std::vector<PATObj1>::const_iterator iobj1 = unclean.begin(); iobj1!=unclean.end(); ++iobj1 ){
 
     PATObj1 myobj = (*iobj1);
@@ -430,7 +497,7 @@ std::vector<PATObj1> MiniAODHelper::RemoveOverlaps( const std::vector<PATObj2>& 
 }
 
 
-template <typename PATObj1, typename PATObj2> 
+template <typename PATObj1, typename PATObj2>
 double MiniAODHelper::DeltaR( const PATObj2& two, const PATObj1& one ) const {
 
   double deltaR = reco::deltaR( one->eta(), one->phi(), two->eta(), two->phi() );
