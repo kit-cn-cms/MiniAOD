@@ -10,6 +10,7 @@
 #include "TMath.h"
 #include "TFile.h"
 #include "TH2F.h"
+#include "TGraphAsymmErrors.h"
 
 #include "DataFormats/PatCandidates/interface/Muon.h"
 #include "DataFormats/PatCandidates/interface/Electron.h"
@@ -29,6 +30,7 @@ class LeptonSFHelper {
   float GetElectronElectronSF( float electronEta1, float electronEta2, int syst , std::string type);
   float GetMuonMuonSF( float muonEta1, float muonEta2, int syst , std::string type);
   float GetElectronMuonSF( float electronEta, float muonEta, int syst , std::string type);
+  void  ChangeMuIsoHistos(bool is_DL);
 
  private:
 
@@ -37,6 +39,8 @@ class LeptonSFHelper {
   void SetElectronElectronHistos( );
   void SetMuonMuonHistos( );
   void SetElectronMuonHistos( );
+  int findPoint(TGraphAsymmErrors& graph,float& x_);
+  float getValue(TGraphAsymmErrors& graph,float& x_,int syst);
 
   TH2F *h_ele_ID_abseta_pt_ratio;
   TH2F *h_ele_TRIGGER_abseta_pt_ratio;
@@ -49,12 +53,12 @@ class LeptonSFHelper {
   TH2F *h_mu_ISO_abseta_pt_ratio;
   
     TH2F *h_mu_ID_abseta_pt_ratioBtoF;
-  TH1D *h_mu_HIP_eta_ratioBtoF;
+  TGraphAsymmErrors *h_mu_HIP_eta_ratioBtoF;
   TH2F *h_mu_TRIGGER_abseta_ptBtoF;
   TH2F *h_mu_ISO_abseta_pt_ratioBtoF;
 
     TH2F *h_mu_ID_abseta_pt_ratioGtoH;
-  TH1D *h_mu_HIP_eta_ratioGtoH;
+  TGraphAsymmErrors *h_mu_HIP_eta_ratioGtoH;
   TH2F *h_mu_TRIGGER_abseta_ptGtoH;
   TH2F *h_mu_ISO_abseta_pt_ratioGtoH;
 
@@ -65,6 +69,7 @@ class LeptonSFHelper {
 
   float electronMaxPt;
   float electronMaxPtHigh;
+  float electronMaxPtHigher;
   float muonMaxPt;
   float muonMaxPtHigh;
   float ljets_mu_BtoF_lumi;

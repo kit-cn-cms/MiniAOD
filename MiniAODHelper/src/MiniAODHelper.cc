@@ -352,14 +352,14 @@ MiniAODHelper::GetSelectedTaus(const std::vector<pat::Tau>& inputTaus, const flo
 
 
 std::vector<pat::Jet>
-MiniAODHelper::GetSelectedJets(const std::vector<pat::Jet>& inputJets, const float iMinPt, const float iMaxAbsEta, const jetID::jetID iJetID, const char iCSVwp){
+MiniAODHelper::GetSelectedJets(const std::vector<pat::Jet>& inputJets, const float iMinPt, const float iMaxAbsEta, const jetID::jetID iJetID, const char iCSVwp, const PUJetID::WP wp){
 
   CheckSetUp();
 
   std::vector<pat::Jet> selectedJets;
 
   for( std::vector<pat::Jet>::const_iterator it = inputJets.begin(), ed = inputJets.end(); it != ed; ++it ){
-    if( isGoodJet(*it, iMinPt, iMaxAbsEta, iJetID, iCSVwp) ) selectedJets.push_back(*it);
+    if( isGoodJet(*it, iMinPt, iMaxAbsEta, iJetID, iCSVwp,wp) ) selectedJets.push_back(*it);
   }
 
   return selectedJets;
@@ -487,23 +487,27 @@ void MiniAODHelper::ApplyJetEnergyCorrection(pat::Jet& jet,
       } else if (!use_corrected_jets) {
 	edm::LogError("MiniAODHelper") << "Trying to use Full Framework GetCorrectedJets without setting jet corrector!";
       }
+
+      const double jec = scale*corrFactor;
+      jet.scaleEnergy( jec );
+      totalCorrFactor *= jec;
+      
       if( addUserFloats ) {
 	  jet.addUserFloat("HelperJES",scale);
 	  const double uncUp = GetJECUncertainty(jet,setup,Systematics::JESup);
 	  const double uncDown = GetJECUncertainty(jet,setup,Systematics::JESdown);
 	  const double jecvarUp = 1. + (uncUp);
 	  const double jecvarDown = 1. + (uncDown);
-	  jet.addUserFloat("HelperJESUp",jecvarUp);
-	  jet.addUserFloat("HelperJESDown",jecvarDown);
+	  jet.addUserFloat("HelperJESup",jecvarUp);
+	  jet.addUserFloat("HelperJESdown",jecvarDown);
       }
-
-      const double jec = scale*corrFactor;
-      jet.scaleEnergy( jec );
-      totalCorrFactor *= jec;
 
       if( Systematics::isJECUncertainty(iSysType) ) {
 	const double unc = GetJECUncertainty(jet,setup,iSysType);
 	const double jecvar = 1. + (unc*uncFactor);
+        if( addUserFloats ) {
+            jet.addUserFloat("Helper"+Systematics::toString(iSysType),jecvar);
+        }
 	jet.scaleEnergy( jecvar );
 	totalCorrFactor *= jecvar;
       }
@@ -1316,7 +1320,7 @@ MiniAODHelper::isGoodTau(const pat::Tau& tau, const float min_pt, const tau::ID 
 }
 
 bool
-MiniAODHelper::isGoodJet(const pat::Jet& iJet, const float iMinPt, const float iMaxAbsEta, const jetID::jetID iJetID, const char iCSVworkingPoint){
+MiniAODHelper::isGoodJet(const pat::Jet& iJet, const float iMinPt, const float iMaxAbsEta, const jetID::jetID iJetID, const char iCSVworkingPoint, const PUJetID::WP wp){
 
 //   CheckVertexSetUp();
 
@@ -1368,6 +1372,10 @@ MiniAODHelper::isGoodJet(const pat::Jet& iJet, const float iMinPt, const float i
   case jetID::none:
   default:
     break;
+  }
+  // PileUP Jet ID
+  if(iJet.hasUserInt("pileupJetIdUpdated:fullId")) {
+    if(iJet.userInt("pileupJetIdUpdated:fullId")<PUJetID::toInt(wp)) return false;
   }
 
   if( !PassesCSV(iJet, iCSVworkingPoint) ) return false;
@@ -1549,7 +1557,7 @@ float MiniAODHelper::GetElectronRelIso(const pat::Electron& iElectron,const cone
 
   double correction = 9999.;
   double EffArea = 9999.;
-  double Eta = abs(iElectron.eta());
+  double Eta = abs(iElectron.superCluster()->eta());
 
   double pfIsoCharged;
   double pfIsoNeutral;
@@ -1689,6 +1697,14 @@ float MiniAODHelper::GetJetCSV(const pat::Jet& jet, const std::string taggername
 
   if(bTagVal > 1.) return 1.;
   if(bTagVal < 0.) return defaultFailure;
+
+  return bTagVal;
+}
+
+float MiniAODHelper::GetJetCSV_DNN(const pat::Jet& jet, const std::string taggername){
+
+
+  float bTagVal = jet.bDiscriminator(taggername);
 
   return bTagVal;
 }
@@ -2893,35 +2909,49 @@ double MiniAODHelper::getJERfactor( const int returnType, const double jetAbsETA
   return factor;
 }
 
-std::vector<pat::MET> MiniAODHelper::CorrectMET(const std::vector<pat::Jet>& oldJetsForMET, const std::vector<pat::Jet>& newJetsForMET, const std::vector<pat::MET>& pfMETs){
+std::vector<pat::MET> MiniAODHelper::CorrectMET(const std::vector<pat::Jet>& oldJetsForMET, const std::vector<pat::Jet>& newJetsForMET, const std::vector<pat::Electron>& oldElectronsForMET, const std::vector<pat::Electron>& newElectronsForMET, const std::vector<pat::Muon>& oldMuonsForMET, const std::vector<pat::Muon>& newMuonsForMET , const std::vector<pat::MET>& pfMETs){
   // this function takes two jet collections and replaces their contribution to the Type1 correction of the MET
 
   std::vector<pat::MET> outputMets;
 
   for(std::vector<pat::MET>::const_iterator oldMET=pfMETs.begin();oldMET!=pfMETs.end();++oldMET){
     pat::MET outMET=*oldMET;
-
+	//cout << "before: uncor pt " << outMET.uncorPt() << " cor pt (type1) " << outMET.corPt(pat::MET::Type1) << " cor pt (type1XY) " << outMET.corPt(pat::MET::Type1XY) << endl;
     if(oldMET-pfMETs.begin() == 0){
     //get old MET p4
-    TLorentzVector oldMETVec;
-    oldMETVec.SetPxPyPzE(oldMET->p4().Px(),oldMET->p4().Py(),oldMET->p4().Pz(),oldMET->p4().E());
+    reco::Candidate::LorentzVector oldMETVec(oldMET->corPx(pat::MET::Type1),oldMET->corPy(pat::MET::Type1),oldMET->pz(),oldMET->corSumEt(pat::MET::Type1));
     // add the pT vector of the old jets with the initial correction to the MET vector
     for(std::vector<pat::Jet>::const_iterator itJet=oldJetsForMET.begin();itJet!=oldJetsForMET.end();++itJet){
-      TLorentzVector oldJETVec;
-      oldJETVec.SetPtEtaPhiE(itJet->pt(),itJet->eta(),itJet->phi(),itJet->energy());
-      TLorentzVector PToldJETVec;
-      PToldJETVec.SetPxPyPzE(oldJETVec.Px(),oldJETVec.Py(),0.0,oldJETVec.Et());
-      oldMETVec+=PToldJETVec;
+      reco::Candidate::LorentzVector PToldJETVec(itJet->px(),itJet->py(),0.,itJet->et());
+      oldMETVec=oldMETVec+PToldJETVec;
+    }   
+    // add the pT vector of the old electrons with the initial correction to the MET vector
+    for(std::vector<pat::Electron>::const_iterator itEle=oldElectronsForMET.begin();itEle!=oldElectronsForMET.end();++itEle){
+      reco::Candidate::LorentzVector PToldEleVec(itEle->px(),itEle->py(),0.,itEle->et());
+      oldMETVec=oldMETVec+PToldEleVec;
+    }
+    // add the pT vector of the old muonns with the initial correction to the MET vector
+    for(std::vector<pat::Muon>::const_iterator itMu=oldMuonsForMET.begin();itMu!=oldMuonsForMET.end();++itMu){
+      reco::Candidate::LorentzVector PToldMuVec(itMu->px(),itMu->py(),0.,itMu->et());
+      oldMETVec=oldMETVec+PToldMuVec;
     }
     // now subtract the pT vectors of the clean recorrected jets
     for(std::vector<pat::Jet>::const_iterator itJet=newJetsForMET.begin();itJet!=newJetsForMET.end();++itJet){
-      TLorentzVector newJETVec;
-      newJETVec.SetPtEtaPhiE(itJet->pt(),itJet->eta(),itJet->phi(),itJet->energy());
-      TLorentzVector PTnewJETVec;
-      PTnewJETVec.SetPxPyPzE(newJETVec.Px(),newJETVec.Py(),0.0,newJETVec.Et());
-      oldMETVec-=PTnewJETVec;
+      reco::Candidate::LorentzVector PTnewJETVec(itJet->px(),itJet->py(),0.,itJet->et());
+      oldMETVec=oldMETVec-PTnewJETVec;
     }
-    outMET.setP4(reco::Candidate::LorentzVector(oldMETVec.Px(),oldMETVec.Py(),oldMETVec.Pz(),oldMETVec.E()));
+    // now subtract the pT vectors of the recorrected electrons
+    for(std::vector<pat::Electron>::const_iterator itEle=newElectronsForMET.begin();itEle!=newElectronsForMET.end();++itEle){
+      reco::Candidate::LorentzVector PTnewEleVec(itEle->px(),itEle->py(),0.,itEle->et());
+      oldMETVec=oldMETVec-PTnewEleVec;
+    }
+    // now subtract the pT vectors of the recorrected muons
+    for(std::vector<pat::Muon>::const_iterator itMu=newMuonsForMET.begin();itMu!=newMuonsForMET.end();++itMu){
+      reco::Candidate::LorentzVector PTnewMuVec(itMu->px(),itMu->py(),0.,itMu->et());
+      oldMETVec=oldMETVec-PTnewMuVec;
+    }
+    outMET.setP4(oldMETVec);
+    //cout << "after: uncor pt " << outMET.uncorPt() << " cor pt (type1) " << outMET.corPt(pat::MET::Type1) << " cor pt (type1XY) " << outMET.corPt(pat::MET::Type1XY) << endl;
     }
 
     outputMets.push_back(outMET);
@@ -2929,4 +2959,12 @@ std::vector<pat::MET> MiniAODHelper::CorrectMET(const std::vector<pat::Jet>& old
 
   return outputMets;
   
+}
+
+jetID::jetID MiniAODHelper::getjetID(const std::string& jetID) {
+    
+    if(jetID=="loose") return jetID::jetLoose;
+    else if(jetID=="tight") return jetID::jetTight;
+    else return jetID::none;
+    
 }

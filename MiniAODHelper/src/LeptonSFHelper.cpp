@@ -11,8 +11,9 @@ LeptonSFHelper::LeptonSFHelper( ){
   SetMuonMuonHistos( );
   SetElectronMuonHistos( );
 
-  electronMaxPt = 199.0;
-  electronMaxPtHigh=250.0;
+  electronMaxPt = 150.0;
+  electronMaxPtHigh= 201.0;
+  electronMaxPtHigher=499.0;
   muonMaxPt = 119.0;
   muonMaxPtHigh = 499.0;
   
@@ -65,40 +66,40 @@ std::map< std::string, float >  LeptonSFHelper::GetLeptonSF( const std::vector< 
 
   for (auto Electron: Electrons){ //Electron is of type pat::Electron
 
-    ElectronIDSF = ElectronIDSF * GetElectronSF(Electron.pt(), Electron.superCluster()->eta(), 0, "ID");
-    ElectronIDSF_Up = ElectronIDSF_Up *GetElectronSF(Electron.pt(), Electron.superCluster()->eta(), 1, "ID");
-    ElectronIDSF_Down = ElectronIDSF_Down * GetElectronSF(Electron.pt(), Electron.superCluster()->eta(), -1, "ID");
+    ElectronIDSF = ElectronIDSF * GetElectronSF(Electron.userFloat("ptBeforeRun2Calibration"), Electron.superCluster()->eta(), 0, "ID");
+    ElectronIDSF_Up = ElectronIDSF_Up *GetElectronSF(Electron.userFloat("ptBeforeRun2Calibration"), Electron.superCluster()->eta(), 1, "ID");
+    ElectronIDSF_Down = ElectronIDSF_Down * GetElectronSF(Electron.userFloat("ptBeforeRun2Calibration"), Electron.superCluster()->eta(), -1, "ID");
 
-    ElectronIsoSF = ElectronIsoSF * GetElectronSF(Electron.pt(), Electron.superCluster()->eta(), 0, "Iso");
-    ElectronIsoSF_Up = ElectronIsoSF_Up  * GetElectronSF(Electron.pt(), Electron.superCluster()->eta(), 1, "Iso");
-    ElectronIsoSF_Down = ElectronIsoSF_Down * GetElectronSF(Electron.pt(), Electron.superCluster()->eta(), -1, "Iso");
+    ElectronIsoSF = ElectronIsoSF * GetElectronSF(Electron.userFloat("ptBeforeRun2Calibration"), Electron.superCluster()->eta(), 0, "Iso");
+    ElectronIsoSF_Up = ElectronIsoSF_Up  * GetElectronSF(Electron.userFloat("ptBeforeRun2Calibration"), Electron.superCluster()->eta(), 1, "Iso");
+    ElectronIsoSF_Down = ElectronIsoSF_Down * GetElectronSF(Electron.userFloat("ptBeforeRun2Calibration"), Electron.superCluster()->eta(), -1, "Iso");
 
-    ElectronTriggerSF = ElectronTriggerSF * GetElectronSF(Electron.pt(), Electron.superCluster()->eta(), 0, "Trigger");
-    ElectronTriggerSF_Up = ElectronTriggerSF_Up  * GetElectronSF(Electron.pt(), Electron.superCluster()->eta(), 1, "Trigger");
-    ElectronTriggerSF_Down = ElectronTriggerSF_Down * GetElectronSF(Electron.pt(), Electron.superCluster()->eta(), -1, "Trigger");
+    ElectronTriggerSF = ElectronTriggerSF * GetElectronSF(Electron.userFloat("ptBeforeRun2Calibration"), Electron.superCluster()->eta(), 0, "Trigger");
+    ElectronTriggerSF_Up = ElectronTriggerSF_Up  * GetElectronSF(Electron.userFloat("ptBeforeRun2Calibration"), Electron.superCluster()->eta(), 1, "Trigger");
+    ElectronTriggerSF_Down = ElectronTriggerSF_Down * GetElectronSF(Electron.userFloat("ptBeforeRun2Calibration"), Electron.superCluster()->eta(), -1, "Trigger");
 
-    ElectronGFSSF = ElectronGFSSF * GetElectronSF(Electron.pt(), Electron.superCluster()->eta(), 0, "GFS");
-    ElectronGFSSF_Up = ElectronGFSSF_Up *GetElectronSF(Electron.pt(), Electron.superCluster()->eta(), 1, "GFS");
-    ElectronGFSSF_Down = ElectronGFSSF_Down * GetElectronSF(Electron.pt(), Electron.superCluster()->eta(), -1, "GFS");
+    ElectronGFSSF = ElectronGFSSF * GetElectronSF(Electron.userFloat("ptBeforeRun2Calibration"), Electron.superCluster()->eta(), 0, "GFS");
+    ElectronGFSSF_Up = ElectronGFSSF_Up *GetElectronSF(Electron.userFloat("ptBeforeRun2Calibration"), Electron.superCluster()->eta(), 1, "GFS");
+    ElectronGFSSF_Down = ElectronGFSSF_Down * GetElectronSF(Electron.userFloat("ptBeforeRun2Calibration"), Electron.superCluster()->eta(), -1, "GFS");
 
 
   } for (auto Muon: Muons){ //Muon is of type pat::Muon
 
-    MuonIDSF = MuonIDSF * GetMuonSF(Muon.pt(), Muon.eta(), 0, "ID");
-    MuonIDSF_Up = MuonIDSF_Up * GetMuonSF(Muon.pt(), Muon.eta(), 1, "ID");
-    MuonIDSF_Down = MuonIDSF_Down * GetMuonSF(Muon.pt(), Muon.eta(), -1, "ID");
+    MuonIDSF = MuonIDSF * GetMuonSF(Muon.userFloat("PtbeforeRC"), Muon.eta(), 0, "ID");
+    MuonIDSF_Up = MuonIDSF_Up * GetMuonSF(Muon.userFloat("PtbeforeRC"), Muon.eta(), 1, "ID");
+    MuonIDSF_Down = MuonIDSF_Down * GetMuonSF(Muon.userFloat("PtbeforeRC"), Muon.eta(), -1, "ID");
 
-    MuonHIPSF = MuonHIPSF * GetMuonSF(Muon.pt(), Muon.eta(), 0, "HIP");
-    MuonHIPSF_Up = MuonHIPSF_Up * GetMuonSF(Muon.pt(), Muon.eta(), 1, "HIP");
-    MuonHIPSF_Down = MuonHIPSF_Down * GetMuonSF(Muon.pt(), Muon.eta(), -1, "HIP");
+    MuonHIPSF = MuonHIPSF * GetMuonSF(Muon.userFloat("PtbeforeRC"), Muon.eta(), 0, "HIP");
+    MuonHIPSF_Up = MuonHIPSF_Up * GetMuonSF(Muon.userFloat("PtbeforeRC"), Muon.eta(), 1, "HIP");
+    MuonHIPSF_Down = MuonHIPSF_Down * GetMuonSF(Muon.userFloat("PtbeforeRC"), Muon.eta(), -1, "HIP");
 
-    MuonIsoSF = MuonIsoSF * GetMuonSF(Muon.pt(), Muon.eta(), 0, "Iso");
-    MuonIsoSF_Up = MuonIsoSF_Up  * GetMuonSF(Muon.pt(), Muon.eta(), 1, "Iso");
-    MuonIsoSF_Down = MuonIsoSF_Down * GetMuonSF(Muon.pt(), Muon.eta(), -1, "Iso");
+    MuonIsoSF = MuonIsoSF * GetMuonSF(Muon.userFloat("PtbeforeRC"), Muon.eta(), 0, "Iso");
+    MuonIsoSF_Up = MuonIsoSF_Up  * GetMuonSF(Muon.userFloat("PtbeforeRC"), Muon.eta(), 1, "Iso");
+    MuonIsoSF_Down = MuonIsoSF_Down * GetMuonSF(Muon.userFloat("PtbeforeRC"), Muon.eta(), -1, "Iso");
 
-    MuonTriggerSF = MuonTriggerSF * GetMuonSF(Muon.pt(), Muon.eta(), 0, "Trigger");
-    MuonTriggerSF_Up = MuonTriggerSF_Up  * GetMuonSF(Muon.pt(), Muon.eta(), 1, "Trigger");
-    MuonTriggerSF_Down = MuonTriggerSF_Down * GetMuonSF(Muon.pt(), Muon.eta(), -1, "Trigger");
+    MuonTriggerSF = MuonTriggerSF * GetMuonSF(Muon.userFloat("PtbeforeRC"), Muon.eta(), 0, "Trigger");
+    MuonTriggerSF_Up = MuonTriggerSF_Up  * GetMuonSF(Muon.userFloat("PtbeforeRC"), Muon.eta(), 1, "Trigger");
+    MuonTriggerSF_Down = MuonTriggerSF_Down * GetMuonSF(Muon.userFloat("PtbeforeRC"), Muon.eta(), -1, "Trigger");
 
   }
 
@@ -166,9 +167,9 @@ std::map< std::string, float >  LeptonSFHelper::GetLeptonSF( const std::vector< 
   ScaleFactorMap["ElectronSF_Up"]= ElectronIDSF_Up * ElectronIsoSF_Up * ElectronTriggerSF_Up;
   ScaleFactorMap["ElectronSF_Down"]= ElectronIDSF_Down * ElectronIsoSF_Down * ElectronTriggerSF_Down;
 
-  ScaleFactorMap["MuonSF"]= MuonIDSF * MuonIsoSF * MuonTriggerSF;
-  ScaleFactorMap["MuonSF_Up"]= MuonIDSF_Up * MuonIsoSF_Up * MuonTriggerSF_Up;
-  ScaleFactorMap["MuonSF_Down"]= MuonIDSF_Down * MuonIsoSF_Down * MuonTriggerSF_Down;
+  ScaleFactorMap["MuonSF"]= MuonIDSF * MuonIsoSF * MuonTriggerSF * MuonHIPSF;
+  ScaleFactorMap["MuonSF_Up"]= MuonIDSF_Up * MuonIsoSF_Up * MuonTriggerSF_Up * MuonHIPSF_Up;
+  ScaleFactorMap["MuonSF_Down"]= MuonIDSF_Down * MuonIsoSF_Down * MuonTriggerSF_Down * MuonHIPSF_Down;
 
   ScaleFactorMap["LeptonSF"]= ScaleFactorMap["ElectronSF"] * ScaleFactorMap["MuonSF"];
   ScaleFactorMap["LeptonSF_Up"]= ScaleFactorMap["ElectronSF_Up"] * ScaleFactorMap["MuonSF_Up"];
@@ -182,9 +183,10 @@ float LeptonSFHelper::GetElectronSF(  float electronPt , float electronEta , int
   int thisBin=0;
 
   float searchEta=electronEta;
-  float searchPt=TMath::Min( electronPt , electronMaxPt );
+  float searchPt=TMath::Min( electronPt , electronMaxPt ); // if e_pt < 150 use the corresponding bin
+  if(searchPt==electronMaxPt) {searchPt=electronMaxPtHigher;}; // if e_pt >= 150 go to last bin by setting searchpt to 499
   if (type=="Trigger"){
-    searchPt=TMath::Min( electronPt , electronMaxPtHigh );
+    searchPt=TMath::Min( electronPt , electronMaxPtHigh ); // if pt > 200 use overflow bin by setting searchpt to 201
   }
 
   float nomval = 0;
@@ -219,6 +221,10 @@ float LeptonSFHelper::GetElectronSF(  float electronPt , float electronEta , int
     error=h_ele_ISO_abseta_pt_ratio->GetBinError( thisBin );
     upval=nomval+error;  //DANGERZONE need to add pT depnednet 1% uncertainty
     downval=nomval-error;
+    if(electronPt<20 || electronPt>80) {
+        upval=upval*( 1.0+sqrt(0.01*0.01) );
+        downval=downval*( 1.0-sqrt(0.01*0.01) );
+    }
 
   }
   else if ( type == "GFS" ){
@@ -228,6 +234,10 @@ float LeptonSFHelper::GetElectronSF(  float electronPt , float electronEta , int
     error=h_ele_GFS_abseta_pt_ratio->GetBinError( thisBin );
     upval=nomval+error; //DANGERZONE need to add pT depnednet 1% uncertainty
     downval=nomval-error;
+    if(electronPt<20 || electronPt>80) {
+        upval=upval*( 1.0+sqrt(0.01*0.01) );
+        downval=downval*( 1.0-sqrt(0.01*0.01) );
+    }
 
   }
   else {
@@ -250,10 +260,10 @@ float LeptonSFHelper::GetMuonSF(  float muonPt , float muonEta , int syst , std:
 
   int thisBin=0;
 
-  float searchEta=fabs( muonEta );
-  float searchPt=TMath::Min( muonPt , muonMaxPt );
+  float searchEta=fabs( muonEta ); 
+  float searchPt=TMath::Min( muonPt , muonMaxPt ); // if muonpt > 119 use last bin
   if (type=="Trigger"){
-    searchPt=TMath::Min( muonPt , muonMaxPtHigh );
+    searchPt=TMath::Min( muonPt , muonMaxPtHigh );// if muonpt > 499 use last bin
   }
   float nomval = 0;
   float error = 0;
@@ -338,17 +348,17 @@ float LeptonSFHelper::GetMuonSF(  float muonPt , float muonEta , int syst , std:
 
   else if ( type == "HIP" ){
 
-    thisBin = h_mu_HIP_eta_ratioBtoF->FindBin( searchEta );
-    nomvalBtoF=h_mu_HIP_eta_ratioBtoF->GetBinContent( thisBin );
-    errorBtoF=h_mu_HIP_eta_ratioBtoF->GetBinError( thisBin );
-    upvalBtoF=( nomvalBtoF+errorBtoF );
-    downvalBtoF=( nomvalBtoF-errorBtoF );
+    //thisBin = findPoint(h_mu_HIP_eta_ratioBtoF,searchEta );
+    nomvalBtoF=getValue(*h_mu_HIP_eta_ratioBtoF,searchEta,0);
+    //errorBtoF=h_mu_HIP_eta_ratioBtoF->GetBinError( thisBin );
+    upvalBtoF=getValue(*h_mu_HIP_eta_ratioBtoF,searchEta,1);
+    downvalBtoF=getValue(*h_mu_HIP_eta_ratioBtoF,searchEta,-1);
     
-    thisBin = h_mu_HIP_eta_ratioGtoH->FindBin( searchEta );
-    nomvalGtoH=h_mu_HIP_eta_ratioGtoH->GetBinContent( thisBin );
-    errorGtoH=h_mu_HIP_eta_ratioGtoH->GetBinError( thisBin );
-    upvalGtoH=( nomvalGtoH+errorGtoH );
-    downvalGtoH=( nomvalGtoH-errorGtoH );
+    //thisBin = h_mu_HIP_eta_ratioGtoH->FindBin( searchEta );
+    nomvalGtoH=getValue(*h_mu_HIP_eta_ratioGtoH,searchEta,0);
+    //errorGtoH=h_mu_HIP_eta_ratioGtoH->GetBinError( thisBin );
+    upvalGtoH=getValue(*h_mu_HIP_eta_ratioGtoH,searchEta,1);
+    downvalGtoH=getValue(*h_mu_HIP_eta_ratioGtoH,searchEta,-1);
     
     nomval=(ljets_mu_BtoF_lumi*nomvalBtoF + ljets_mu_GtoH_lumi * nomvalGtoH)/(ljets_mu_BtoF_lumi+ljets_mu_GtoH_lumi);
     upval=(ljets_mu_BtoF_lumi*upvalBtoF + ljets_mu_GtoH_lumi * upvalGtoH)/(ljets_mu_BtoF_lumi+ljets_mu_GtoH_lumi);
@@ -421,11 +431,29 @@ float LeptonSFHelper::GetElectronMuonSF(  float electronEta , float muonEta , in
   }
   return nomval;
 }
+
+void LeptonSFHelper::ChangeMuIsoHistos(bool is_DL) {
+    std::string ISOinputFileBtoF =  std::string(getenv("CMSSW_BASE")) + "/src/MiniAOD/MiniAODHelper/data/leptonSF/feb160317/" + "mu_ISO_EfficienciesAndSF_BCDEF.root";
+    std::string ISOinputFileGtoH =  std::string(getenv("CMSSW_BASE")) + "/src/MiniAOD/MiniAODHelper/data/leptonSF/feb160317/" + "mu_ISO_EfficienciesAndSF_GH.root";
+    TFile *f_ISOSFBtoF = new TFile(std::string(ISOinputFileBtoF).c_str(),"READ");
+    TFile *f_ISOSFGtoH = new TFile(std::string(ISOinputFileGtoH).c_str(),"READ");
+    if(is_DL) {
+        h_mu_ISO_abseta_pt_ratioBtoF=(TH2F*)f_ISOSFBtoF->Get("LooseISO_TightID_pt_eta/pt_abseta_ratio");
+        h_mu_ISO_abseta_pt_ratioGtoH=(TH2F*)f_ISOSFGtoH->Get("LooseISO_TightID_pt_eta/pt_abseta_ratio");
+    }
+    else {
+        h_mu_ISO_abseta_pt_ratioBtoF=(TH2F*)f_ISOSFBtoF->Get("TightISO_TightID_pt_eta/pt_abseta_ratio");
+        h_mu_ISO_abseta_pt_ratioGtoH=(TH2F*)f_ISOSFGtoH->Get("TightISO_TightID_pt_eta/pt_abseta_ratio");
+    }
+    delete f_ISOSFBtoF;
+    delete f_ISOSFGtoH;
+}
+
 //PRIVATE
 
 void LeptonSFHelper::SetElectronHistos( ){
 
-  std::string IDinputFile = std::string(getenv("CMSSW_BASE")) + "/src/MiniAOD/MiniAODHelper/data/leptonSF/feb160317/" + "ele_ID_SF.root";
+  std::string IDinputFile = std::string(getenv("CMSSW_BASE")) + "/src/MiniAOD/MiniAODHelper/data/leptonSF/feb160317/" + "ele_ID_SF_tight.root";
   std::string TRIGGERinputFile = std::string(getenv("CMSSW_BASE")) + "/src/MiniAOD/MiniAODHelper/data/leptonSF/feb160317/" + "ele_TriggerSF_Run2016All_v1.root";
   std::string ISOinputFile = std::string(getenv("CMSSW_BASE")) + "/src/MiniAOD/MiniAODHelper/data/leptonSF/feb160317/" + "ele_Reco_EGM2D.root"; // DANGERZONE: no iso SF yet??
   std::string GFSinputFile = std::string(getenv("CMSSW_BASE")) + "/src/MiniAOD/MiniAODHelper/data/leptonSF/feb160317/" + "ele_Reco_EGM2D.root";
@@ -453,8 +481,8 @@ void LeptonSFHelper::SetMuonHistos( ){
   std::string ISOinputFileBtoF =  std::string(getenv("CMSSW_BASE")) + "/src/MiniAOD/MiniAODHelper/data/leptonSF/feb160317/" + "mu_ISO_EfficienciesAndSF_BCDEF.root";
   std::string ISOinputFileGtoH =  std::string(getenv("CMSSW_BASE")) + "/src/MiniAOD/MiniAODHelper/data/leptonSF/feb160317/" + "mu_ISO_EfficienciesAndSF_GH.root";
   
-  std::string HIPinputFileBtoF =  std::string(getenv("CMSSW_BASE")) + "/src/MiniAOD/MiniAODHelper/data/leptonSF/feb160317/" + "HIP_BCDEF_histos.root";
-  std::string HIPinputFileGtoH =  std::string(getenv("CMSSW_BASE")) + "/src/MiniAOD/MiniAODHelper/data/leptonSF/feb160317/" + "HIP_GH_histos.root";
+  std::string HIPinputFileBtoF =  std::string(getenv("CMSSW_BASE")) + "/src/MiniAOD/MiniAODHelper/data/leptonSF/feb160317/" + "HIP_BCDEF.root";
+  std::string HIPinputFileGtoH =  std::string(getenv("CMSSW_BASE")) + "/src/MiniAOD/MiniAODHelper/data/leptonSF/feb160317/" + "HIP_GH.root";
 
 
   TFile *f_IDSFBtoF = new TFile(std::string(IDinputFileBtoF).c_str(),"READ");
@@ -473,8 +501,8 @@ void LeptonSFHelper::SetMuonHistos( ){
   h_mu_ID_abseta_pt_ratioBtoF = (TH2F*)f_IDSFBtoF->Get("MC_NUM_TightID_DEN_genTracks_PAR_pt_eta/pt_abseta_ratio");
   h_mu_ID_abseta_pt_ratioGtoH = (TH2F*)f_IDSFGtoH->Get("MC_NUM_TightID_DEN_genTracks_PAR_pt_eta/pt_abseta_ratio");
 
-  h_mu_HIP_eta_ratioBtoF = (TH1D*)f_HIPSFBtoF->Get("ratio_eff_aeta_dr030e030_corr");
-  h_mu_HIP_eta_ratioGtoH = (TH1D*)f_HIPSFGtoH->Get("ratio_eff_aeta_dr030e030_corr");
+  h_mu_HIP_eta_ratioBtoF = (TGraphAsymmErrors*)f_HIPSFBtoF->Get("ratio_eff_aeta_dr030e030_corr");
+  h_mu_HIP_eta_ratioGtoH = (TGraphAsymmErrors*)f_HIPSFGtoH->Get("ratio_eff_aeta_dr030e030_corr");
 
   h_mu_TRIGGER_abseta_ptBtoF= (TH2F*)f_TRIGGERSFBtoF->Get("IsoMu24_OR_IsoTkMu24_PtEtaBins/pt_abseta_ratio");
   h_mu_TRIGGER_abseta_ptGtoH= (TH2F*)f_TRIGGERSFGtoH->Get("IsoMu24_OR_IsoTkMu24_PtEtaBins/pt_abseta_ratio");
@@ -485,7 +513,7 @@ void LeptonSFHelper::SetMuonHistos( ){
 }
 
 void LeptonSFHelper::SetElectronElectronHistos( ){
-  std::string TRIGGERinputFile = std::string(getenv("CMSSW_BASE")) + "/src/MiniAOD/MiniAODHelper/data/leptonSF/" + "triggerSummary_ee.root";
+  std::string TRIGGERinputFile = std::string(getenv("CMSSW_BASE")) + "/src/MiniAOD/MiniAODHelper/data/leptonSF/feb160317/" + "triggerSummary_ee_ReReco2016_ttH.root";
 
   TFile *f_TRIGGERSF = new TFile(std::string(TRIGGERinputFile).c_str(),"READ");
 
@@ -493,7 +521,7 @@ void LeptonSFHelper::SetElectronElectronHistos( ){
 }
 
 void LeptonSFHelper::SetMuonMuonHistos( ){
-  std::string TRIGGERinputFile = std::string(getenv("CMSSW_BASE")) + "/src/MiniAOD/MiniAODHelper/data/leptonSF/" + "triggerSummary_mumu.root";
+  std::string TRIGGERinputFile = std::string(getenv("CMSSW_BASE")) + "/src/MiniAOD/MiniAODHelper/data/leptonSF/feb160317/" + "triggerSummary_mumu_ReReco2016_ttH.root";
 
   TFile *f_TRIGGERSF = new TFile(std::string(TRIGGERinputFile).c_str(),"READ");
 
@@ -501,9 +529,35 @@ void LeptonSFHelper::SetMuonMuonHistos( ){
 }
 
 void LeptonSFHelper::SetElectronMuonHistos( ){
-  std::string TRIGGERinputFile = std::string(getenv("CMSSW_BASE")) + "/src/MiniAOD/MiniAODHelper/data/leptonSF/" + "triggerSummary_emu.root";
+  std::string TRIGGERinputFile = std::string(getenv("CMSSW_BASE")) + "/src/MiniAOD/MiniAODHelper/data/leptonSF/feb160317/" + "triggerSummary_emu_ReReco2016_ttH.root";
 
   TFile *f_TRIGGERSF = new TFile(std::string(TRIGGERinputFile).c_str(),"READ");
 
   h_ele_mu_TRIGGER_abseta_abseta = (TH2F*)f_TRIGGERSF->Get("scalefactor_eta2d_with_syst");
+}
+
+int LeptonSFHelper::findPoint(TGraphAsymmErrors& graph,float& x_) {
+    double x=0.;
+    double y=0.;
+    for(int i=0;i<graph.GetN();i++) {
+        graph.GetPoint(i,x,y);
+        double l=0.;
+        double r=0.;
+        l = x-graph.GetErrorXlow(i);
+        r = x+graph.GetErrorXhigh(i);
+        if((l<=x_) && (x_<r)) {return i;}
+    }
+    return -1;
+}
+
+float LeptonSFHelper::getValue(TGraphAsymmErrors& graph,float& x_,int syst) {
+    int i = findPoint(graph,x_);
+    if(i<0) {std::cerr << "x-value " << x_ << " cannot be assigned to a valid point" << std::endl;}
+    double x=0.;
+    double y=0.;
+    graph.GetPoint(i,x,y);
+    float y_=y;
+    if(syst==1) {return y_+graph.GetErrorYhigh(i);}
+    else if(syst==-1) {return y_-graph.GetErrorYlow(i);}
+    else {return y_;}
 }
