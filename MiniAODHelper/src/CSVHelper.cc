@@ -66,6 +66,7 @@ void CSVHelper::init(const std::string& hf, const std::string& lf, const int& nH
   delete f_CSVwgt_LF;
 
   isInit_ = true;
+  std::cout<<"isInit_ "<< isInit_ <<std::endl;
 }
 
 
@@ -151,6 +152,7 @@ CSVHelper::getCSVWeight(const std::vector<double>& jetPts,
 			double &csvWgtLF,
 			double &csvWgtCF) const
 {
+  std::cout<<"isInit_ "<< isInit_<<std::endl;
   if( !isInit_ ) {
     throw cms::Exception("BadCSVWeightAccess") << "CSVHelper not initialized";
   }
