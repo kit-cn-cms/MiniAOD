@@ -26,12 +26,18 @@ MiniAODHelper::MiniAODHelper()
   samplename = "blank";
 
   // JEC uncertainties
-  jecUncertaintyTxtFileName_ = std::string(getenv("CMSSW_BASE")) + "/src/MiniAOD/MiniAODHelper/data/jec/Summer16_23Sep2016V4_MC_UncertaintySources_AK4PFchs.txt";
-  if( jecUncertaintyTxtFileName_ != "" ) {
-    if( !utils::fileExists(jecUncertaintyTxtFileName_) ) { // check if JEC uncertainty file exists
-      throw cms::Exception("InvalidJECUncertaintyFile") << "No JEC uncertainty file '" << jecUncertaintyTxtFileName_ << "' found";
+  //std::vector<std::string> jecUncertaintyTxtFileNames_ (std::string(getenv("CMSSW_BASE")) + "/src/MiniAOD/MiniAODHelper/data/jec/Summer16_23Sep2016V4_MC_UncertaintySources_AK4PFchs.txt", std::string(getenv("CMSSW_BASE")) + "/src/MiniAOD/MiniAODHelper/data/jec/Summer16_23Sep2016V4_MC_UncertaintySources_AK4PFpuppi.txt", std::string(getenv("CMSSW_BASE")) + "/src/MiniAOD/MiniAODHelper/data/jec/Summer16_23Sep2016V4_MC_UncertaintySources_AK8PFchs.txt", std::string(getenv("CMSSW_BASE")) + "/src/MiniAOD/MiniAODHelper/data/jec/Summer16_23Sep2016V4_MC_UncertaintySources_AK8PFpuppi.txt");
+  
+  //jecUncertaintyTxtFileName_ = std::string(getenv("CMSSW_BASE")) + "/src/MiniAOD/MiniAODHelper/data/jec/Summer16_23Sep2016V4_MC_UncertaintySources_AK4PFchs.txt";
+  
+  /*if( jecUncertaintyTxtFileNames_.size() !=  0) {
+    for (std::vector<std::string>::iterator it = jecUncertaintyTxtFileNames_.begin(); it != jecUncertaintyTxtFileNames_.end();++it){
+        if( !utils::fileExists(*it) ) { // check if JEC uncertainty file exists
+            throw cms::Exception("InvalidJECUncertaintyFile") << "No JEC uncertainty file '" << *it << "' found";
+        }
     }
-  }
+
+  }*/
 
   { //  JER preparation
 
@@ -87,6 +93,20 @@ MiniAODHelper::~MiniAODHelper(){
 }
 
 
+void MiniAODHelper::SetJetTypeLabelForJECUncertainty(const std::string& newjetTypeLabelForJECUncertainty){
+    
+    std::cout<<"using "<<newjetTypeLabelForJECUncertainty<<" as jetTypeLabel. Are you sure it exists in "<<jecUncertaintyTxtFileName_<<std::endl;
+    jetTypeLabelForJECUncertainty_=newjetTypeLabelForJECUncertainty;
+}
+
+
+void MiniAODHelper::SetJECUncertaintyTxtFileName(const std::string& newjecUncertaintyTxtFileName){
+    if( !utils::fileExists(std::string(getenv("CMSSW_BASE"))+"/"+newjecUncertaintyTxtFileName) ) { // check if JEC uncertainty file exists
+        throw cms::Exception("InvalidJECUncertaintyFile") << "No JEC uncertainty file '" << std::string(getenv("CMSSW_BASE"))+newjecUncertaintyTxtFileName << "' found";
+    };     
+    std::cout<<std::string(getenv("CMSSW_BASE"))+"/"+newjecUncertaintyTxtFileName<<std::endl;
+    jecUncertaintyTxtFileName_=std::string(getenv("CMSSW_BASE"))+"/"+newjecUncertaintyTxtFileName;
+}
 
 
 void MiniAODHelper::SetJER_SF_Tool(const edm::EventSetup& iSetup){
@@ -233,21 +253,31 @@ JetCorrectionUncertainty*
 MiniAODHelper::CreateJetCorrectorUncertainty(const edm::EventSetup& iSetup, 
 					     const std::string& jetTypeLabel,
 					     const std::string& uncertaintyLabel) const {
+                                                 
+                                                 
   try {
     JetCorrectorParameters jetCorPar;
     if( jecUncertaintyTxtFileName_ != "" ) {
+//           std::cout<<"here i am, rocking like a hurricane 0 "<<uncertaintyLabel<<"  "<<jecUncertaintyTxtFileName_<<std::endl;
       if( uncertaintyLabel == "Uncertainty" ) {// this is the key in the database but not in txt...
+//           std::cout<<"here i am, rocking like a hurricane 1"<<std::endl;
 	jetCorPar = JetCorrectorParameters(jecUncertaintyTxtFileName_,"Total");
       } else {
+//           std::cout<<"here i am, rocking like a hurricane 2"<<std::endl;
 	jetCorPar = JetCorrectorParameters(jecUncertaintyTxtFileName_,uncertaintyLabel);
       }
+//           std::/*cout*/<<"here i am, rocking like a hurricane 3"<<std::endl;
     } else {
+//           std::cout<<"here i am, rocking like a hurricane 4"<<std::endl;
       edm::ESHandle<JetCorrectorParametersCollection> JetCorParColl;
       iSetup.get<JetCorrectionsRecord>().get(jetTypeLabel,JetCorParColl);
       //JetCorrectorParameters const & JetCorPar = (*JetCorParColl)[uncertaintyLabel];
       jetCorPar = (*JetCorParColl)[uncertaintyLabel];
+      throw cms::Exception("InvalidJECUncertaintyFile") << "Bad path to JEC uncertainty file '" << std::string(getenv("CMSSW_BASE"))+"/" + jecUncertaintyTxtFileName_ << "'";
     }
+//           std::cout<<"here i am, rocking like a hurricane 4.5"<<std::endl;
     return new JetCorrectionUncertainty(jetCorPar);
+//           std::cout<<"here i am, rocking like a hurricane 5"<<std::endl;
   } catch (cms::Exception& e) {
     throw cms::Exception("InvalidJECUncertaintyLabel") << "No JEC uncertainty with label '" << uncertaintyLabel << "' found in event setup";
   }
@@ -272,6 +302,7 @@ void
 MiniAODHelper::UpdateJetCorrectorUncertainties(const edm::EventSetup& iSetup) {
   for(auto& jecUncIt: jecUncertainties_) {
     jecUncIt.second.reset( CreateJetCorrectorUncertainty(iSetup,jetTypeLabelForJECUncertainty_,jecUncIt.first) );
+//     std::cout<<"debug1"<<std::endl;
   }
 }
 
@@ -1253,12 +1284,14 @@ MiniAODHelper::isGoodElectron(const pat::Electron& iElectron, const float iMinPt
   case electronID::electronGeneralPurposeMVA2016WP80:
     passesID = PassesGeneralPurposeMVA2016WP80(iElectron);
     passesKinematics = ((iElectron.pt() >= minElectronPt) && (fabs(iElectron.eta()) <= maxElectronEta) && !inCrack);
+//     passesIso = true;
     passesIso = 0.15>=GetElectronRelIso(iElectron, coneSize::R03, corrType::rhoEA,effAreaType::spring16);
     break;
   case electronID::electronGeneralPurposeMVA2016WP90:
     passesID = PassesGeneralPurposeMVA2016WP90(iElectron);
     passesKinematics = ((iElectron.pt() >= minElectronPt) && (fabs(iElectron.eta()) <= maxElectronEta) && !inCrack);
-    passesIso = 0.15>=GetElectronRelIso(iElectron, coneSize::R03, corrType::rhoEA,effAreaType::spring16);
+//     passesIso = true;
+     passesIso = 0.15>=GetElectronRelIso(iElectron, coneSize::R03, corrType::rhoEA,effAreaType::spring16);
     break;
 
   }

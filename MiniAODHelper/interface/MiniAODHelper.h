@@ -150,6 +150,8 @@ class MiniAODHelper{
 
   // Set up MiniAODHelper
   void SetUp(string, int, const analysisType::analysisType, bool);
+  void SetJECUncertaintyTxtFileName(const std::string& newjecUncertaintyTxtFileName);
+  void SetJetTypeLabelForJECUncertainty(const std::string& newjetTypeLabelForJECUncertainty);
   void SetUpPUWeights(const std::string& fileNameMCNPU,const std::string& histNameMCNPU,const std::string& fileNameDataNPUEstimated,const std::string& histNameDataNPUEstimated);
   void SetVertex(const reco::Vertex&);
   void SetRho(double);

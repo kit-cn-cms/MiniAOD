@@ -66,7 +66,7 @@ void CSVHelper::init(const std::string& hf, const std::string& lf, const int& nH
   delete f_CSVwgt_LF;
 
   isInit_ = true;
-  std::cout<<"isInit_ "<< isInit_ <<std::endl;
+//   std::cout<<"isInit_ "<< isInit_ <<std::endl;
 }
 
 
@@ -87,16 +87,18 @@ CSVHelper::fillCSVHistos(TFile *fileHF, TFile *fileLF, const std::vector<Systema
     systematic.ReplaceAll("up","Up");
     systematic.ReplaceAll("down","Down");
     systematic.ReplaceAll("CSV","");
-    if(systematic!="") {systematic="_"+systematic;}
-    //std::cout << "adding histograms for systematic " << systematic << std::endl;
+    std::cout << "adding histograms for systematic " << systematic << std::endl;
+    if(systematic.Contains("Stats")) {
+        systematic.ReplaceAll("HF","");
+        systematic.ReplaceAll("LF","");
+    }    if(systematic!="") {systematic="_"+systematic;}
     
     // loop over all pt bins of the different jet flavours
     for (int iPt = 0; iPt < nHFptBins_; iPt++) {
         TString name = Form("csv_ratio_Pt%i_Eta0_%s", iPt, (syst_csv_suffix+systematic).Data());
         // only read the histogram if it exits in the root file
-        if(fileHF->GetListOfKeys()->Contains(name)) {
+        if(fileHF->GetListOfKeys()->Contains(name) && !(TString(Systematics::toString(systs[iSys])).Contains("HF"))) {
             h_csv_wgt_hf.at(iSys).at(iPt) = readHistogram(fileHF,name);
-            //std::cout << "added " << name << std::endl;
         }
         else {
             h_csv_wgt_hf.at(iSys).at(iPt) = readHistogram(fileHF,name.ReplaceAll(systematic,""));
@@ -106,7 +108,7 @@ CSVHelper::fillCSVHistos(TFile *fileHF, TFile *fileLF, const std::vector<Systema
         TString name = Form("c_csv_ratio_Pt%i_Eta0_%s", iPt, (syst_csv_suffix+systematic).Data());
         if(fileHF->GetListOfKeys()->Contains(name)) {
             c_csv_wgt_hf.at(iSys).at(iPt) = readHistogram(fileHF,name);
-            //std::cout << "added " << name << std::endl;
+            std::cout << "added " << name << std::endl;
         }
         else {
             c_csv_wgt_hf.at(iSys).at(iPt) = readHistogram(fileHF,name.ReplaceAll(systematic,""));
@@ -115,9 +117,9 @@ CSVHelper::fillCSVHistos(TFile *fileHF, TFile *fileLF, const std::vector<Systema
     for (int iPt = 0; iPt < nLFptBins_; iPt++) {
         for (int iEta = 0; iEta < nLFetaBins_; iEta++) {
             TString name = Form("csv_ratio_Pt%i_Eta%i_%s", iPt, iEta, (syst_csv_suffix+systematic).Data());
-            if(fileLF->GetListOfKeys()->Contains(name)) {
+            if(fileLF->GetListOfKeys()->Contains(name) && !(TString(Systematics::toString(systs[iSys])).Contains("LF"))) {
                 h_csv_wgt_lf.at(iSys).at(iPt).at(iEta) = readHistogram(fileLF,name);
-                //std::cout << "added " << name << std::endl;
+                std::cout << "added " << name << std::endl;
             }
             else {
                 h_csv_wgt_lf.at(iSys).at(iPt).at(iEta) = readHistogram(fileLF,name.ReplaceAll(systematic,""));
@@ -152,7 +154,7 @@ CSVHelper::getCSVWeight(const std::vector<double>& jetPts,
 			double &csvWgtLF,
 			double &csvWgtCF) const
 {
-  std::cout<<"isInit_ "<< isInit_<<std::endl;
+//   std::cout<<"isInit_ "<< isInit_<<std::endl;
   if( !isInit_ ) {
     throw cms::Exception("BadCSVWeightAccess") << "CSVHelper not initialized";
   }
