@@ -102,7 +102,7 @@ void MiniAODHelper::SetJetTypeLabelForJECUncertainty(const std::string& newjetTy
 
 void MiniAODHelper::SetJECUncertaintyTxtFileName(const std::string& newjecUncertaintyTxtFileName){
     if( !utils::fileExists(std::string(getenv("CMSSW_BASE"))+"/"+newjecUncertaintyTxtFileName) ) { // check if JEC uncertainty file exists
-        throw cms::Exception("InvalidJECUncertaintyFile") << "No JEC uncertainty file '" << std::string(getenv("CMSSW_BASE"))+newjecUncertaintyTxtFileName << "' found";
+        throw cms::Exception("InvalidJECUncertaintyFile") << "No JEC uncertainty file '" << std::string(getenv("CMSSW_BASE"))+"/"+newjecUncertaintyTxtFileName << "' found";
     };     
     std::cout<<std::string(getenv("CMSSW_BASE"))+"/"+newjecUncertaintyTxtFileName<<std::endl;
     jecUncertaintyTxtFileName_=std::string(getenv("CMSSW_BASE"))+"/"+newjecUncertaintyTxtFileName;

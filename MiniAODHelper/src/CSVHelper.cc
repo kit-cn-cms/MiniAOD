@@ -84,6 +84,7 @@ CSVHelper::fillCSVHistos(TFile *fileHF, TFile *fileLF, const std::vector<Systema
   for (size_t iSys = 0; iSys < nSys; iSys++) {
     // some string cosmetics to search for the correct histogram in the root files  
     TString systematic = Systematics::toString(systs[iSys]);
+    TString systematic_original = systematic; 
     systematic.ReplaceAll("up","Up");
     systematic.ReplaceAll("down","Down");
     systematic.ReplaceAll("CSV","");
@@ -93,11 +94,17 @@ CSVHelper::fillCSVHistos(TFile *fileHF, TFile *fileLF, const std::vector<Systema
         systematic.ReplaceAll("LF","");
     }    if(systematic!="") {systematic="_"+systematic;}
     
+    if(systematic_original.Contains("HFStats")){
+        systematic_original.ReplaceAll("HFStats","LFStats");
+    }
+    else if(systematic_original.Contains("LFStats")){
+        systematic_original.ReplaceAll("LFStats","HFStats");
+    }
     // loop over all pt bins of the different jet flavours
     for (int iPt = 0; iPt < nHFptBins_; iPt++) {
         TString name = Form("csv_ratio_Pt%i_Eta0_%s", iPt, (syst_csv_suffix+systematic).Data());
         // only read the histogram if it exits in the root file
-        if(fileHF->GetListOfKeys()->Contains(name) && !(TString(Systematics::toString(systs[iSys])).Contains("HF"))) {
+        if(fileHF->GetListOfKeys()->Contains(name) && !(systematic_original.Contains("HF"))) { 
             h_csv_wgt_hf.at(iSys).at(iPt) = readHistogram(fileHF,name);
         }
         else {
@@ -117,9 +124,9 @@ CSVHelper::fillCSVHistos(TFile *fileHF, TFile *fileLF, const std::vector<Systema
     for (int iPt = 0; iPt < nLFptBins_; iPt++) {
         for (int iEta = 0; iEta < nLFetaBins_; iEta++) {
             TString name = Form("csv_ratio_Pt%i_Eta%i_%s", iPt, iEta, (syst_csv_suffix+systematic).Data());
-            if(fileLF->GetListOfKeys()->Contains(name) && !(TString(Systematics::toString(systs[iSys])).Contains("LF"))) {
+            if(fileLF->GetListOfKeys()->Contains(name) && !(systematic_original.Contains("LF"))) { 
                 h_csv_wgt_lf.at(iSys).at(iPt).at(iEta) = readHistogram(fileLF,name);
-                std::cout << "added " << name << std::endl;
+                std::cout << "added " << name << " from LF file" << std::endl;
             }
             else {
                 h_csv_wgt_lf.at(iSys).at(iPt).at(iEta) = readHistogram(fileLF,name.ReplaceAll(systematic,""));
